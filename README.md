@@ -13,8 +13,9 @@ The models is based on the following [DCGAN article]
 
 The changes I made to the original codebase are:
 
-* Added a checkpoint for model training using `tf.train.Checkpoint` and `tf.train.CheckpointManager`
+* Added a custom callback for saving and loading model checkpoints using `tf.train.Checkpoint`
 
-* Added inference script for generating new images from sampling latent space for the generator
+* Added inference / generation script for generating new images from sampling latent space for the generator
 
-The DCGAN is trained for 50 epochs with batch size of 32. All the images are resized to 64x64x3.
+The DCGAN is trained for 50 epochs with batch size of 32. All the images are resized to 64x64x3 and with a latent dimension of 100.
+

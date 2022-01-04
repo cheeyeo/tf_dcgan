@@ -65,7 +65,7 @@ if __name__ == "__main__":
     # when to start checkpoint; will be 0 when first training
     start_at = 0
 
-    # if first time training this will be none
+    # define the objects we want to persist
     ckpt_obj = tf.train.Checkpoint(
             d_opt=d_opt,
             g_opt=g_opt,
@@ -77,10 +77,10 @@ if __name__ == "__main__":
 
     if latest_ckpt is not None:
         print("[INFO] Resuming from ckpt: {}".format(latest_ckpt))
-        ckpt_obj.restore(latest_ckpt).expect_partial()
+        ckpt_obj.restore(latest_ckpt).assert_existing_objects_matched().expect_partial()
         latest_ckpt_idx = latest_ckpt.split(os.path.sep)[-1].split("-")[-1]
         start_at = int(latest_ckpt_idx)
-        print(f"Resuming ckpt at {start_at}")
+        print(f"[INFO] Resuming ckpt at {start_at}")
 
     print("[INFO] Setting up callbacks...")
     ckpt_callback = EpochCheckpoint(ckpt_dir, every=1, start_at=start_at, ckpt_obj=ckpt_obj)

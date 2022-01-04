@@ -3,7 +3,7 @@ import argparse
 
 import tensorflow as tf
 from tensorflow.keras.models import load_model
-import matplotlib.pyplot as plt
+
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
@@ -17,12 +17,10 @@ if __name__ == "__main__":
     generator.summary()
 
     seed = tf.random.normal([1, 100])
-    print(seed.shape)
 
     generated_img = generator(seed)
-    print(generated_img.shape)
     generated_img = (generated_img[0] * 127.5) + 127.5
+
+    # returns a PIL image object
     img = tf.keras.utils.array_to_img(generated_img)
-    plt.figure()
-    plt.imshow(img)
-    plt.savefig(args["output"])
+    img.save(args["output"])
