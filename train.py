@@ -20,12 +20,6 @@ from models.callbacks import EpochCheckpoint
 
 
 if __name__ == "__main__":
-    # ap = argparse.ArgumentParser()
-    # ap.add_argument("--start", type=int, default=0, help="Resume training from specific epoch checkpoint")
-    # args = vars(ap.parse_args())
-    # print(args)
-
-
     print("[INFO] Preparing dataset...")
     dataset = os.path.join(os.getcwd(), "dataset", "zalando", "zalando")
 
