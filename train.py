@@ -1,3 +1,4 @@
+import argparse
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # Suppress TensorFlow logging (1)
 
@@ -15,9 +16,11 @@ from models.dcgan import build_generator
 from models.dcgan import build_discriminator
 from models.dcgan import DCGAN
 from models.callbacks import GANMonitor
+from models.callbacks import EpochCheckpoint
 
 
 if __name__ == "__main__":
+    print("[INFO] Preparing dataset...")
     dataset = os.path.join(os.getcwd(), "dataset", "zalando", "zalando")
 
     # tf.keras.utils.image_dataset_from_directory returns a tf.data.Dataset obj
@@ -37,45 +40,53 @@ if __name__ == "__main__":
     generator = build_generator(config.LATENT_DIM, channels=config.CHANNELS)
     discriminator = build_discriminator(config.HEIGHT, config.WIDTH, config.CHANNELS)
 
-    discriminator_optimizer = Adam(learning_rate=config.D_LR, beta_1=0.5)
-    generator_optimizer = Adam(learning_rate=config.G_LR, beta_1=0.5)
+    d_opt = Adam(learning_rate=config.D_LR, beta_1=0.5)
+    g_opt = Adam(learning_rate=config.G_LR, beta_1=0.5)
 
     generator.summary()
     discriminator.summary()
 
     dcgan = DCGAN(discriminator=discriminator, generator=generator, latent_dim=config.LATENT_DIM)
-
-    # set up checkpoints
-    print("[INFO] Setting up checkpoints...")
-    checkpoint_dir = os.path.join("output", "checkpoints")
-    checkpoint = tf.train.Checkpoint(
-        generator_optimizer=generator_optimizer,
-        discriminator_optimizer=discriminator_optimizer,
-        generator=generator,
-        discriminator=discriminator
-    )
-
-    ckpt_manager = tf.train.CheckpointManager(
-        checkpoint,
-        checkpoint_dir, 
-        max_to_keep=None
-    )
-
-    # if checkpoint exists, restore the latest checkpoint
-    if ckpt_manager.latest_checkpoint:
-        checkpoint.restore(ckpt_manager.latest_checkpoint)
-        print("Restored Latest Checkpoint !!!")
-
+   
     dcgan.compile(
-        d_opt=discriminator_optimizer,
-        g_opt=generator_optimizer,
+        d_opt=d_opt,
+        g_opt=g_opt,
         loss_fn=BinaryCrossentropy()
     )
+
+    print("[INFO] Checking for latest checkpoint ...")
+    ckpt_dir = os.path.join("output", "checkpoints")
+    # when to start checkpoint; will be 0 when first training
+    start_at = 0
+
+    # define the objects we want to persist
+    ckpt_obj = tf.train.Checkpoint(
+            d_opt=d_opt,
+            g_opt=g_opt,
+            generator=generator,
+            discriminator=discriminator
+    )
+
+    latest_ckpt = tf.train.latest_checkpoint(ckpt_dir)
+
+    if latest_ckpt is not None:
+        print("[INFO] Resuming from ckpt: {}".format(latest_ckpt))
+        ckpt_obj.restore(latest_ckpt).assert_existing_objects_matched().expect_partial()
+        latest_ckpt_idx = latest_ckpt.split(os.path.sep)[-1].split("-")[-1]
+        start_at = int(latest_ckpt_idx)
+        print(f"[INFO] Resuming ckpt at {start_at}")
+
+    print("[INFO] Setting up callbacks...")
+    ckpt_callback = EpochCheckpoint(ckpt_dir, every=1, start_at=start_at, ckpt_obj=ckpt_obj)
+    gan_monitor = GANMonitor(config.PLOT_ARTIFACTS, num_img=16, latent_dim=config.LATENT_DIM, start_at=start_at)
 
     dcgan.fit(
         train_imgs,
         epochs=config.EPOCHS,
-        callbacks=[GANMonitor(config.PLOT_ARTIFACTS, ckpt_manager, num_img=16, latent_dim=config.LATENT_DIM)]
+        callbacks=[
+            ckpt_callback,
+            gan_monitor
+        ]
     )
 
     dcgan.generator.save(config.MODEL_ARTIFACTS)
