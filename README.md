@@ -9,7 +9,7 @@
 
 Training a DCGAN with [Clothing & Models] dataset from Kaggle in an attempt to generate colour images using DCGANS.
 
-The models is based on the following [DCGAN article]
+The models is based on the following: [DCGAN article]
 
 The changes I made to the original codebase are:
 
@@ -19,3 +19,4 @@ The changes I made to the original codebase are:
 
 The DCGAN is trained for 50 epochs with batch size of 32. All the images are resized to 64x64x3 and with a latent dimension of 100.
 
+There is also a variant of DCGAN called LSGAN which uses mean squared error to improve the GAN training stability and to create higher-res images but its not working for the current dataset.
